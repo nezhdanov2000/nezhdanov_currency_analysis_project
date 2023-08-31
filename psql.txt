@@ -1,0 +1,32 @@
+-- Подключение к базе данных de
+\c de;
+
+-- Создание таблицы time_series
+CREATE TABLE IF NOT EXISTS time_series (
+    timestamp TIMESTAMP, 
+    open DECIMAL(4, 2), 
+    high DECIMAL(4, 2), 
+    low DECIMAL(4, 2), 
+    close DECIMAL(4, 2), 
+    volume INT,
+    symbol VARCHAR(50)
+);
+
+-- Создание VIEW vw_time_series
+CREATE OR REPLACE VIEW vw_time_series AS
+SELECT timestamp, open, high, low, close, volume, symbol
+FROM time_series
+GROUP BY timestamp, open, high, low, close, volume, symbol;
+
+-- Создание таблицы settings
+CREATE TABLE IF NOT EXISTS settings (
+    key VARCHAR(50), 
+    value VARCHAR(100)
+);
+
+-- Вставка данных в таблицу settings
+INSERT INTO settings(key, value) VALUES 
+    (GOOGLE,MSFT'), 
+    ('interval_minutes', '15'), 
+    ('jar_path', '/task2spark_2.12-0.1.0-SNAPSHOT.jar'), 
+    ('object_storage', 'hdfs');
