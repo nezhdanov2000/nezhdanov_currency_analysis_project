@@ -1,8 +1,9 @@
 from enum import Enum
-
+import pwd
 class TimeSeriesInterval(Enum):
     INTRADAY = 1
     MONTHLY = 2
+
 
 class SettingKeys(Enum):
     INTERVAL_MINUTES = 'interval_minutes'
