@@ -16,7 +16,6 @@ apiint = Variable.get("apiint")
 tickers = Variable.get("tickers")
 
 pg_conn = BaseHook.get_connection(Variable.get("conn_id"))
-
 engine = create_engine('postgresql://' + pg_conn.login + ':' + \
   pg_conn.password + '@' + pg_conn.host + ':' + str(pg_conn.port) + \
   '/' + pg_conn.schema)
@@ -32,6 +31,7 @@ def get_daily_ticker_data(stock_id, interval, dummy=False, output=None):
   if (output):
     if (not os.path.exists(output)):
       os.makedirs(output)
+    # имя файла по шаблону, например GOOGL_year2_month12.csv
     fname = output + "/" + stock_id + '_' + str(df.index[0].date()) + '.csv'
     print(fname)
     df.to_csv(fname)
@@ -43,7 +43,6 @@ def get_daily_ticker_data(stock_id, interval, dummy=False, output=None):
   df['low'] = pd.to_numeric(df['low'])
   df['close'] = pd.to_numeric(df['close'])
   df['volume'] = pd.to_numeric(df['volume'])
-
   df.index.names = ['dt']
   df.to_sql(stock_id.lower(), engine, if_exists='append')
 
@@ -51,6 +50,7 @@ def get_daily_data():
   for stock_id in tickers.split():
     print(stock_id)
     get_daily_ticker_data(stock_id, apiint, dummy=False, output="data")
+    # на стандартном (бесплатном) плане  ограничение 5 API запросов в минуту, поэтому спим между запросами
     sleep(20)
 
 def refresh_views():
@@ -74,15 +74,13 @@ def refresh_mart():
 
   conn.autocommit = True
   cursor = conn.cursor()
-
   sql = "REFRESH MATERIALIZED VIEW stocks_mart"
   print(sql)
   cursor.execute(sql)
   conn.commit()
-
   conn.close()
 
-with DAG(dag_id="a_incremental_load", start_date=datetime(2023, 9, 1), schedule="0 0 * * *", max_active_runs=1) as dag:
+with DAG(dag_id="a_incremental_load", start_date=datetime(2022, 12, 28), schedule="0 0 * * *", max_active_runs=1) as dag:
   get_daily_data_task = PythonOperator(task_id="get_daily_data", python_callable = get_daily_data)
   refresh_views_task = PythonOperator(task_id="refresh_views", python_callable = refresh_views)
   refresh_mart_task = PythonOperator(task_id="refresh_mart", python_callable = refresh_mart)

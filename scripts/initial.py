@@ -16,7 +16,6 @@ from airflow.models import Variable
 apikey = Variable.get("apikey")
 apiint = Variable.get("apiint")
 tickers = Variable.get("tickers")
-
 pg_conn = BaseHook.get_connection(Variable.get("conn_id"))
 
 engine = create_engine('postgresql://' + pg_conn.login + ':' + \
@@ -45,6 +44,7 @@ def get_month_slice(stock_id, interval, slice, dummy=False, output=None):
   if (output):
     if (not os.path.exists(output)):
       os.makedirs(output)
+    # имя файла по шаблону, например GOOGL_year2_month12.csv
     fname = output + "/" + stock_id + '_' + slice + '.csv'
     print(fname)
     df.to_csv(fname)
@@ -53,11 +53,13 @@ def get_month_slice(stock_id, interval, slice, dummy=False, output=None):
   df.to_sql(stock_id.lower(), engine, if_exists='append')
 
 def load_ticker_data(ticker):
+  # Загружает полный дамп данных за два года для данного тикера (24 куска помесячно)
   for current_year in [1, 2]:
     for current_month in range(1, 13):
       month_slice = 'year' + str(current_year) + 'month' + str(current_month)
       print(ticker, month_slice)
       get_month_slice(ticker, apiint, month_slice, output="data")
+      # на стандартном (бесплатном) плане  ограничение 5 API запросов в минуту, поэтому спим между запросами
       sleep(20)
 
 def load_data():
@@ -71,7 +73,6 @@ def create_view(ticker):
 
   conn.autocommit = True
   cursor = conn.cursor()
-
   viewname=ticker.lower()+"view"
   temp_table=ticker.lower()+"temp_table"
   temp_table_wtime=ticker.lower()+"temp_table_wtime"
@@ -110,7 +111,6 @@ def create_mart(**kwargs):
 
   conn.autocommit = True
   cursor = conn.cursor()
-
   mart_query = psycopg2.sql.SQL("CREATE MATERIALIZED VIEW stocks_mart AS (with")
   sql_template = """
   {tckr}_sum_volume AS (
